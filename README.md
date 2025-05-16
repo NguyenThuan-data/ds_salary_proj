@@ -16,11 +16,11 @@
 **Python Version:** 3.11  
 **Packages:** pandas, numpy, sklearn, matplotlib, seaborn, selenium, flask, json, pickle  
 **For Web Framework Requirements:**  ```pip install -r requirements.txt```  
-**Youtube Tutorial:** https://www.youtube.com/playlist?list=PL2zq7klxX5ASFejJj80ob9ZAnBHdz5O1t
+**Youtube Tutorial:** https://www.youtube.com/playlist?list=PL2zq7klxX5ASFejJj80ob9ZAnBHdz5O1t  
 **Scraper Github:** https://github.com/arapfaik/scraping-glassdoor-selenium  
-**Scraper Article:** https://towardsdatascience.com/selenium-tutorial-scraping-glassdoor-com-in-10-minutes-3d0915c6d905
-**Kaggle dataset:** https://www.kaggle.com/datasets/andrewmvd/data-scientist-jobs
-**Flask Productionization:** https://towardsdatascience.com/productionize-a-machine-learning-model-with-flask-and-heroku-8201260503d2
+**Scraper Article:** https://towardsdatascience.com/selenium-tutorial-scraping-glassdoor-com-in-10-minutes-3d0915c6d905  
+**Kaggle dataset:** https://www.kaggle.com/datasets/andrewmvd/data-scientist-jobs  
+**Flask Productionization:** https://towardsdatascience.com/productionize-a-machine-learning-model-with-flask-and-heroku-8201260503d2  
 
 ---
 
