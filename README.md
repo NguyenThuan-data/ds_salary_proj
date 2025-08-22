@@ -66,7 +66,7 @@ After scraping the data, I needed to clean it up so that it was usable for our m
 
 ## EDA
 I looked at the distributions of the data and the value counts for the various categorical variables. Below are a few highlights from the pivot tables. 
-*** Adding pics and write about it here
+
 
 ---
 
@@ -116,10 +116,3 @@ The learning outcomes that I gained after completed this Project.
 * Using Command Prompt to manage files and directories.
 ---
 
-## Technical Skills
-
-### Data Collection
-### Data Cleaning
-### EDA
-### Model Building
-### FlaskAPI
