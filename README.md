@@ -1,5 +1,4 @@
 # Data Science Salary Estimator
-**The main purpose of making this project is learning. It is completely followed by using youtube tutorial of Ken Jee (link will be list below)**
 
 ---
 
