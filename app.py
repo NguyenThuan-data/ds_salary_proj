@@ -64,12 +64,10 @@ def _dataset_and_meta():
         return None, {}
     df = pd.read_csv(path, low_memory=False)
     colmap = _normalize_columns(df)
-    # Compute/identify salary column
     try:
         sal_col = _ensure_salary_column(df, colmap)
     except Exception:
         sal_col = None
-    # Build available filters dynamically
     options = {}
     for key, label in [
         ('job_state', 'Location (State)'),
@@ -82,7 +80,6 @@ def _dataset_and_meta():
         if key in colmap:
             series = df[colmap[key]].dropna().astype(str)
             options[key] = sorted(series.unique().tolist())[:200]
-    # Skill flags
     skills = []
     for flag, nice in [('python_yn', 'Python'), ('spark', 'Spark'), ('aws', 'AWS'), ('excel', 'Excel'), ('rstudio_yn', 'R Studio')]:
         if flag in colmap:
@@ -97,6 +94,19 @@ def _dataset_and_meta():
     return df, meta
 
 
+def _apply_filters(df: pd.DataFrame, meta: dict, args) -> pd.DataFrame:
+    working = df.copy()
+    colmap = meta['colmap']
+    for key in meta['options'].keys():
+        val = args.get(key)
+        if val and key in colmap:
+            working = working[working[colmap[key]].astype(str) == val]
+    for s in meta['skills']:
+        if args.get(s['key']) == '1' and s['key'] in colmap:
+            working = working[working[colmap[s['key']]] == 1]
+    return working
+
+
 # ---- Web UI ---------------------------------------------------------------
 
 @app.route('/')
@@ -109,44 +119,49 @@ def explore():
     # Read filters from query
     args = request.args
     colmap = meta['colmap']
-    working = df.copy()
-    # Apply categorical filters if present
-    for key in meta['options'].keys():
-        val = args.get(key)
-        if val and key in colmap:
-            working = working[working[colmap[key]].astype(str) == val]
-    # Apply skill flags
-    for s in meta['skills']:
-        if args.get(s['key']) == '1' and s['key'] in colmap:
-            working = working[working[colmap[s['key']]] == 1]
-    # Compute summary
+    working = _apply_filters(df, meta, args)
     salary_col = meta['salary_col']
     summary = None
     top_breakdowns = {}
+    verdict = None
     if salary_col and not working.empty:
         vals = pd.to_numeric(working[salary_col], errors='coerce').dropna()
         if not vals.empty:
+            p25 = vals.quantile(0.25)
+            p75 = vals.quantile(0.75)
             summary = {
                 'count': int(vals.shape[0]),
                 'avg': round(float(vals.mean()), 2),
                 'median': round(float(vals.median()), 2),
-                'p25': round(float(vals.quantile(0.25)), 2),
-                'p75': round(float(vals.quantile(0.75)), 2),
+                'p25': round(float(p25), 2),
+                'p75': round(float(p75), 2),
                 'min': round(float(vals.min()), 2),
                 'max': round(float(vals.max()), 2),
             }
-            # Breakdown by state and title if present
             for key in ['job_state', 'job_simp', 'industry']:
                 if key in colmap:
                     g = working.groupby(working[colmap[key]].astype(str))[salary_col].mean().sort_values(ascending=False).head(10)
                     top_breakdowns[key] = g.round(2).reset_index().values.tolist()
+            offer = args.get('offer')
+            if offer:
+                try:
+                    offer_v = float(offer)
+                    if offer_v < p25:
+                        verdict = 'below'
+                    elif offer_v > p75:
+                        verdict = 'above'
+                    else:
+                        verdict = 'fair'
+                except ValueError:
+                    verdict = None
     return render_template(
         'index.html',
         files=[],
         meta=meta,
         summary=summary,
         top_breakdowns=top_breakdowns,
-        selected=args
+        selected=args,
+        verdict=verdict
     )
 
 
@@ -180,6 +195,55 @@ def columns(fname: str):
         return jsonify({'file': fname, 'columns': list(df.columns.astype(str).values)})
     except Exception as e:
         abort(500, description=str(e))
+
+
+@app.route('/download')
+def download():
+    df, meta = _dataset_and_meta()
+    if df is None:
+        abort(404)
+    working = _apply_filters(df, meta, request.args)
+    # Keep a reasonable cap to avoid massive downloads in free tiers
+    out = working.head(5000)
+    csv = out.to_csv(index=False)
+    from flask import Response
+    return Response(
+        csv,
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="salary_export.csv"'}
+    )
+
+
+@app.route('/api/percentiles')
+def percentiles():
+    df, meta = _dataset_and_meta()
+    if df is None or not meta.get('salary_col'):
+        abort(503)
+    working = _apply_filters(df, meta, request.args)
+    vals = pd.to_numeric(working[meta['salary_col']], errors='coerce').dropna()
+    if vals.empty:
+        return jsonify({'count': 0})
+    p = {
+        'count': int(vals.shape[0]),
+        'p10': round(float(vals.quantile(0.10)), 2),
+        'p25': round(float(vals.quantile(0.25)), 2),
+        'median': round(float(vals.quantile(0.50)), 2),
+        'p75': round(float(vals.quantile(0.75)), 2),
+        'p90': round(float(vals.quantile(0.90)), 2),
+    }
+    offer = request.args.get('offer')
+    if offer:
+        try:
+            v = float(offer)
+            if v < p['p25']:
+                p['verdict'] = 'below'
+            elif v > p['p75']:
+                p['verdict'] = 'above'
+            else:
+                p['verdict'] = 'fair'
+        except ValueError:
+            pass
+    return jsonify(p)
 
 
 @app.route('/api/estimate')
