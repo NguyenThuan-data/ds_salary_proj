@@ -21,10 +21,16 @@
       .btn-primary:hover { background: #1d4ed8; }
       .content-panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; background: #fff; }
       .section-title { font-weight: 600; margin: 0 0 12px; font-size: 16px; }
+      .toolbar { display: flex; gap: 10px; align-items: center; margin: 8px 0 16px; }
+      .btn-outline { display: inline-block; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #111; text-decoration: none; }
       .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
       .kpi-card { border: 1px solid #eee; border-radius: 10px; padding: 12px; background: #fafafa; }
       .kpi-label { font-size: 12px; color: #555; margin: 0 0 6px; }
       .kpi-value { font-size: 18px; font-weight: 700; }
+      .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #ddd; }
+      .badge-good { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+      .badge-fair { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+      .badge-bad { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
       .table { width: 100%; border-collapse: collapse; }
       .table th, .table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
       .muted { color: #666; }
@@ -90,6 +96,11 @@
           {% endif %}
 
           <div class="filter-group">
+            <label class="label-text" for="offer">Offer (annual)</label>
+            <input id="offer" name="offer" class="select-input" type="number" step="1000" min="0" value="{{ selected.get('offer') }}">
+          </div>
+
+          <div class="filter-group">
             <button class="btn-primary" type="submit">Update</button>
           </div>
         </form>
@@ -97,6 +108,10 @@
 
       <main class="content-panel">
         <h2 class="section-title">Results</h2>
+        <div class="toolbar">
+          <a class="btn-outline" href="/download?{{ request.query_string.decode() }}">Download CSV</a>
+          <button class="btn-outline" type="button" id="shareBtn">Copy Share Link</button>
+        </div>
         {% if summary %}
           <div class="kpi-row">
             <div class="kpi-card"><div class="kpi-label">Samples</div><div class="kpi-value">{{ summary.count }}</div></div>
@@ -106,6 +121,18 @@
             <div class="kpi-card"><div class="kpi-label">P75</div><div class="kpi-value">{{ summary.p75 }}</div></div>
             <div class="kpi-card"><div class="kpi-label">Range</div><div class="kpi-value">{{ summary.min }} - {{ summary.max }}</div></div>
           </div>
+          {% if selected.get('offer') and verdict %}
+            <p>
+              Offer check:
+              {% if verdict == 'below' %}
+                <span class="badge badge-bad">Below market (under P25)</span>
+              {% elif verdict == 'above' %}
+                <span class="badge badge-good">Above market (over P75)</span>
+              {% else %}
+                <span class="badge badge-fair">Within market (P25–P75)</span>
+              {% endif %}
+            </p>
+          {% endif %}
         {% else %}
           <p class="muted">Adjust filters to see salary estimates.</p>
         {% endif %}
@@ -151,5 +178,17 @@
         {% endif %}
       </main>
     </div>
+    <script>
+      (function(){
+        var btn = document.getElementById('shareBtn');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+          var url = window.location.href;
+          navigator.clipboard && navigator.clipboard.writeText(url);
+          btn.textContent = 'Link copied';
+          setTimeout(function(){ btn.textContent = 'Copy Share Link'; }, 1500);
+        });
+      })();
+    </script>
   </body>
 </html>
