@@ -20,4 +20,4 @@ COPY . .
 EXPOSE 3000
 
 # Use gunicorn in production
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:3000", "--workers", "2", "--timeout", "120"]
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-3000} --workers 2 --timeout 120"]
