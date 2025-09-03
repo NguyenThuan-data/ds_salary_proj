@@ -49,7 +49,7 @@
               <select id="state" name="job_state" class="select-input">
                 <option value="">Any</option>
                 {% for v in meta.options['job_state'] %}
-                  <option value="{{ v }}" {% if selected.get('job_state') == v %}selected{% endif %}>{{ v }}</option>
+                  <option value="{{ v }}">{{ v }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -60,7 +60,7 @@
               <select id="title" name="job_simp" class="select-input">
                 <option value="">Any</option>
                 {% for v in meta.options['job_simp'] %}
-                  <option value="{{ v }}" {% if selected.get('job_simp') == v %}selected{% endif %}>{{ v }}</option>
+                  <option value="{{ v }}">{{ v }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -71,7 +71,7 @@
               <select id="industry" name="industry" class="select-input">
                 <option value="">Any</option>
                 {% for v in meta.options['industry'] %}
-                  <option value="{{ v }}" {% if selected.get('industry') == v %}selected{% endif %}>{{ v }}</option>
+                  <option value="{{ v }}">{{ v }}</option>
                 {% endfor %}
               </select>
             </div>
