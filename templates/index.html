@@ -3,40 +3,153 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Project Dashboard</title>
+    <title>Salary Explorer</title>
     <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; }
-      .page-title { font-size: 20px; font-weight: 600; margin: 0 0 16px; }
-      .section { margin: 16px 0; }
-      .file-list { list-style: none; padding: 0; margin: 8px 0 0; }
-      .file-item { margin: 6px 0; }
-      .actions { display: inline-flex; gap: 10px; margin-left: 8px; }
-      .btn { display: inline-block; padding: 6px 10px; border-radius: 6px; border: 1px solid #ddd; text-decoration: none; color: #111; background: #fff; }
-      .btn:hover { background: #f5f5f5; }
-      .empty { color: #666; }
-      .note { color: #444; font-size: 14px; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 24px; color: #111; }
+      .app-header { margin: 0 0 18px; }
+      .title-text { font-size: 24px; font-weight: 700; margin: 0; }
+      .subtitle-text { color: #444; margin: 6px 0 0; }
+      .layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+      .filters-panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; background: #fff; }
+      .panel-title { font-weight: 600; margin: 0 0 10px; font-size: 16px; }
+      .filter-group { margin: 12px 0; }
+      .label-text { display: block; font-size: 13px; color: #444; margin: 0 0 4px; }
+      .select-input, .checkbox-input { width: 100%; }
+      .select-input { padding: 8px; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
+      .checkbox-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+      .btn-primary { display: inline-block; padding: 8px 12px; border-radius: 8px; border: 1px solid #2563eb; background: #2563eb; color: #fff; text-decoration: none; }
+      .btn-primary:hover { background: #1d4ed8; }
+      .content-panel { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; background: #fff; }
+      .section-title { font-weight: 600; margin: 0 0 12px; font-size: 16px; }
+      .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+      .kpi-card { border: 1px solid #eee; border-radius: 10px; padding: 12px; background: #fafafa; }
+      .kpi-label { font-size: 12px; color: #555; margin: 0 0 6px; }
+      .kpi-value { font-size: 18px; font-weight: 700; }
+      .table { width: 100%; border-collapse: collapse; }
+      .table th, .table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+      .muted { color: #666; }
+      @media (max-width: 800px) {
+        .layout { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
-    <h1 class="page-title">Data Project</h1>
+    <header class="app-header">
+      <h1 class="title-text">Salary Explorer</h1>
+      <p class="subtitle-text">Estimate typical compensation by location, role and skills from the dataset.</p>
+    </header>
 
-    <div class="section">
-      <div class="note">Available datasets found in the repository:</div>
-      {% if files %}
-      <ul class="file-list">
-        {% for f in files %}
-          <li class="file-item">
-            <span>{{ f }}</span>
-            <span class="actions">
-              <a class="btn" href="/api/preview/{{ f }}" target="_blank" rel="noopener">Preview</a>
-              <a class="btn" href="/api/columns/{{ f }}" target="_blank" rel="noopener">Columns</a>
-            </span>
-          </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-        <div class="empty">No datasets detected yet.</div>
-      {% endif %}
+    <div class="layout">
+      <aside class="filters-panel">
+        <form method="get" action="/explore">
+          <h2 class="panel-title">Filters</h2>
+          {% if meta.options.get('job_state') %}
+            <div class="filter-group">
+              <label class="label-text" for="state">Location (State)</label>
+              <select id="state" name="job_state" class="select-input">
+                <option value="">Any</option>
+                {% for v in meta.options['job_state'] %}
+                  <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          {% endif %}
+          {% if meta.options.get('job_simp') %}
+            <div class="filter-group">
+              <label class="label-text" for="title">Job Title</label>
+              <select id="title" name="job_simp" class="select-input">
+                <option value="">Any</option>
+                {% for v in meta.options['job_simp'] %}
+                  <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          {% endif %}
+          {% if meta.options.get('industry') %}
+            <div class="filter-group">
+              <label class="label-text" for="industry">Industry</label>
+              <select id="industry" name="industry" class="select-input">
+                <option value="">Any</option>
+                {% for v in meta.options['industry'] %}
+                  <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          {% endif %}
+
+          {% if meta.skills %}
+            <div class="filter-group">
+              <span class="label-text">Skills</span>
+              {% for s in meta.skills %}
+                <label class="checkbox-row">
+                  <input type="checkbox" class="checkbox-input" name="{{ s.key }}" value="1" {% if selected.get(s.key) == '1' %}checked{% endif %}>
+                  <span>{{ s.label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="filter-group">
+            <button class="btn-primary" type="submit">Update</button>
+          </div>
+        </form>
+      </aside>
+
+      <main class="content-panel">
+        <h2 class="section-title">Results</h2>
+        {% if summary %}
+          <div class="kpi-row">
+            <div class="kpi-card"><div class="kpi-label">Samples</div><div class="kpi-value">{{ summary.count }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Average</div><div class="kpi-value">{{ summary.avg }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Median</div><div class="kpi-value">{{ summary.median }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">P25</div><div class="kpi-value">{{ summary.p25 }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">P75</div><div class="kpi-value">{{ summary.p75 }}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Range</div><div class="kpi-value">{{ summary.min }} - {{ summary.max }}</div></div>
+          </div>
+        {% else %}
+          <p class="muted">Adjust filters to see salary estimates.</p>
+        {% endif %}
+
+        {% if top_breakdowns.get('job_state') %}
+          <h3 class="section-title">Top States by Average</h3>
+          <table class="table">
+            <thead><tr><th>State</th><th>Avg</th></tr></thead>
+            <tbody>
+              {% for row in top_breakdowns['job_state'] %}
+                <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
+        {% if top_breakdowns.get('job_simp') %}
+          <h3 class="section-title">Top Titles by Average</h3>
+          <table class="table">
+            <thead><tr><th>Title</th><th>Avg</th></tr></thead>
+            <tbody>
+              {% for row in top_breakdowns['job_simp'] %}
+                <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
+        {% if top_breakdowns.get('industry') %}
+          <h3 class="section-title">Top Industries by Average</h3>
+          <table class="table">
+            <thead><tr><th>Industry</th><th>Avg</th></tr></thead>
+            <tbody>
+              {% for row in top_breakdowns['industry'] %}
+                <tr><td>{{ row[0] }}</td><td>{{ row[1] }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
+        {% if files and not meta %}
+          <p class="muted">Datasets detected. Deploy with Flask to enable the explorer.</p>
+        {% endif %}
+      </main>
     </div>
   </body>
 </html>
